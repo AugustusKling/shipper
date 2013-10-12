@@ -195,7 +195,7 @@ public class Main {
 			} else {
 				defaultValue = "…";
 			}
-			System.err.print(" " + argument.getCommandLineName() + " "
+			System.err.print(" " + option.getCommandLineName() + " "
 					+ defaultValue);
 
 		}
