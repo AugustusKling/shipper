@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -17,13 +18,15 @@ public class FileMonitor {
 	/**
 	 * @param path
 	 *            Path to monitor.
+	 * @param fileEncoding
+	 *            Encoding for reading the file
 	 * @param listener
 	 *            Handler for detected events.
 	 * @throws IOException
 	 *             Errors other than {@link NoSuchFileException}.
 	 */
-	public FileMonitor(Path path, FileModificationListener listener)
-			throws IOException {
+	public FileMonitor(Path path, Charset fileEncoding,
+			FileModificationListener listener) throws IOException {
 		// Position of read content. Used to detect file rotations.
 		long fileEndPosition = 0;
 
@@ -42,7 +45,8 @@ public class FileMonitor {
 					listener.fileRotated(path);
 				}
 
-				InputStreamReader reader = new InputStreamReader(is);
+				InputStreamReader reader = new InputStreamReader(is,
+						fileEncoding);
 				BufferedReader lineReader = new BufferedReader(reader);
 
 				// Process all lines.

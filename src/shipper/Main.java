@@ -1,6 +1,7 @@
 package shipper;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -33,7 +34,11 @@ public class Main {
 		/**
 		 * Whether to sent all lines or just added lines.
 		 */
-		SKIP("Skip over existing data", "true");
+		SKIP("Skip over existing data", "true"),
+		/**
+		 * Input file encoding.
+		 */
+		FILE_ENCODING("Encoding of the input file", "UTF-8");
 
 		/**
 		 * Hint, displayed in usage message.
@@ -58,7 +63,7 @@ public class Main {
 		 * @return Command line option in long-option style.
 		 */
 		private String getCommandLineName() {
-			return "--" + this.name().toLowerCase();
+			return "--" + this.name().toLowerCase().replace("_", "-");
 		}
 	}
 
@@ -87,6 +92,7 @@ public class Main {
 
 		// Monitor a single file.
 		new FileMonitor(Paths.get(get(arg.FILE)),
+				Charset.forName(get(arg.FILE_ENCODING)),
 				new FileModificationListener() {
 					/**
 					 * If {@code true} encountered messages are ignored.

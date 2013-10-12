@@ -12,7 +12,7 @@ Usage
 
 Invocations look as follows where you are expected to replace all `…` with proper values. Parameters with default values can be omitted.
 ```
-java -jar log4j-shipper.jar --host … --port 4560 --file … --skip true
+java -jar log4j-shipper.jar --host … --port 4560 --file … --skip true --file-encoding UTF-8
 ```
 
 Parameters are as follows:
@@ -24,3 +24,5 @@ Parameters are as follows:
 `--file` Path to local file that shall be monitored. In case the file does not exist, the given location will be monitored and processing will start as soon as the file is created. In case the file gets deleted while processing, processing continues after another file is created at the given path.
 
 `--skip` When `true` the existing file contents are never sent. Newly added lines are sent, though. When `false` all lines will be sent which includes lines that have already been sent with an ealier program start.
+
+`--file-encoding` Encoding of input file. Defaults to UTF-8 which should be fine for most Linux systems. Needs to be set explicitly for Windows systems because their default encoding depends on the region they were sold.

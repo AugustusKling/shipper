@@ -2,6 +2,7 @@ package shipper;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -25,66 +26,71 @@ public class FileMonitorTest {
 
 		final Path tempFile = Files.createTempFile(null, null);
 		try {
-			new FileMonitor(tempFile, new FileModificationListener() {
-				private int step = 0;
+			new FileMonitor(tempFile, Charset.defaultCharset(),
+					new FileModificationListener() {
+						private int step = 0;
 
-				@Override
-				public void noSuchFile(Path path) {
-					org.junit.Assert.assertNotEquals(0, events.size());
-					org.junit.Assert.assertEquals(step, 1);
+						@Override
+						public void noSuchFile(Path path) {
+							org.junit.Assert.assertNotEquals(0, events.size());
+							org.junit.Assert.assertEquals(step, 1);
 
-					events.add(Events.NO_SUCH_FILE);
+							events.add(Events.NO_SUCH_FILE);
 
-					try (FileWriter w = new FileWriter(tempFile.toFile())) {
-						w.append("new");
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
-				}
-
-				@Override
-				public void lineAdded(Path file, String lineContent) {
-					org.junit.Assert.assertNotEquals(0, events.size());
-
-					events.add(Events.LINE_ADDED);
-					if (step == 0) {
-						org.junit.Assert.assertEquals("initial", lineContent);
-						try {
-							Files.delete(tempFile);
-						} catch (IOException e) {
-							throw new RuntimeException(e);
+							try (FileWriter w = new FileWriter(tempFile
+									.toFile())) {
+								w.append("new");
+							} catch (IOException e) {
+								throw new RuntimeException(e);
+							}
 						}
-						step = 1;
-					} else if (step == 1) {
-						org.junit.Assert.assertEquals("new", lineContent);
-						step = 2;
-					}
-				}
 
-				@Override
-				public void fileRotated(Path file) {
-					org.junit.Assert.assertNotEquals(0, events.size());
+						@Override
+						public void lineAdded(Path file, String lineContent) {
+							org.junit.Assert.assertNotEquals(0, events.size());
 
-					events.add(Events.FILE_ROTATED);
-				}
-
-				@Override
-				public void completelyRead(Path file) {
-					if (step == 0) {
-						org.junit.Assert.assertEquals(0, events.size());
-						try (FileWriter w = new FileWriter(tempFile.toFile())) {
-							w.append("initial");
-						} catch (IOException e) {
-							throw new RuntimeException(e);
+							events.add(Events.LINE_ADDED);
+							if (step == 0) {
+								org.junit.Assert.assertEquals("initial",
+										lineContent);
+								try {
+									Files.delete(tempFile);
+								} catch (IOException e) {
+									throw new RuntimeException(e);
+								}
+								step = 1;
+							} else if (step == 1) {
+								org.junit.Assert.assertEquals("new",
+										lineContent);
+								step = 2;
+							}
 						}
-					}
 
-					events.add(Events.COMPLETELY_READ);
-					if (step == 2) {
-						throw new TestDone();
-					}
-				}
-			});
+						@Override
+						public void fileRotated(Path file) {
+							org.junit.Assert.assertNotEquals(0, events.size());
+
+							events.add(Events.FILE_ROTATED);
+						}
+
+						@Override
+						public void completelyRead(Path file) {
+							if (step == 0) {
+								org.junit.Assert.assertEquals(0, events.size());
+								try (FileWriter w = new FileWriter(tempFile
+										.toFile())) {
+									w.append("initial");
+								} catch (IOException e) {
+									throw new RuntimeException(e);
+								}
+							}
+
+							events.add(Events.COMPLETELY_READ);
+							if (step == 2) {
+								throw new TestDone();
+							}
+						}
+					});
 		} catch (TestDone e) {
 			// passed.
 			events.contains(Events.COMPLETELY_READ);
