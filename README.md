@@ -12,7 +12,7 @@ Usage
 
 Invocations look as follows where you are expected to replace all `…` with proper values. Parameters with default values can be omitted.
 ```
-java -jar log4j-shipper.jar --host … --port 4560 --file … --skip true --file-encoding UTF-8
+java -jar shipper.jar --host … --port 4560 --file … --skip true --file-encoding UTF-8
 ```
 
 Parameters are as follows:

@@ -193,7 +193,7 @@ public class Main {
 	private static void printUsageAndExit(arg argument) {
 		System.err.println("Missing value for " + argument.getCommandLineName()
 				+ ": " + argument.hint);
-		System.err.print("Usage: java -jar log4j-shipper.jar");
+		System.err.print("Usage: java -jar shipper.jar");
 		for (arg option : arg.values()) {
 			String defaultValue;
 			if (option.defaultValue != null) {
