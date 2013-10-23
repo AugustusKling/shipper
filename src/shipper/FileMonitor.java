@@ -60,15 +60,15 @@ public class FileMonitor {
 				is.close();
 
 				listener.completelyRead(path);
-
-				// Wait some time to prevent overly high load.
-				try {
-					Thread.sleep(500);
-				} catch (InterruptedException e) {
-					// Idle delay passed.
-				}
 			} catch (NoSuchFileException e) {
 				listener.noSuchFile(path);
+			}
+
+			// Wait some time to prevent overly high load.
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				// Idle delay passed.
 			}
 		}
 	}
