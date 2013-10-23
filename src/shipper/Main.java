@@ -110,6 +110,9 @@ public class Main {
 								"File at "
 										+ path.toAbsolutePath()
 										+ " is not existent. Path will be monitored for newly added files.");
+						// Disable skipping as a newly created to be found file
+						// will only contain new data.
+						skip = false;
 					}
 
 					@Override
