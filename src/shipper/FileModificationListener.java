@@ -25,7 +25,8 @@ public interface FileModificationListener {
 	public void completelyRead(Path path);
 
 	/**
-	 * No file at path.
+	 * No file at path. No file means not having a regular files whose contents
+	 * could be read.
 	 * 
 	 * @param path
 	 *            Monitored path.
