@@ -1,5 +1,8 @@
 package shipper;
 
+import static shipper.ShipperLogger.debug;
+import static shipper.ShipperLogger.error;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -45,7 +48,9 @@ public class FileMonitor {
 
 		try {
 			ws = path.getFileSystem().newWatchService();
+			debug("Using Java WatchService.");
 		} catch (UnsupportedOperationException e) {
+			debug("Falling back to polling.");
 			// File system does not support watching.
 			polling(path, fileEncoding, listener);
 			// Polling is infinite.
@@ -65,10 +70,10 @@ public class FileMonitor {
 			boolean watchingDesired = closestExisting.equals(path.getParent());
 			WatchKey key = null;
 			try {
-				// Start watching closestExisting.
+				debug("Start watching " + closestExisting);
 				key = closestExisting.register(ws, kinds);
 			} catch (Exception e) {
-				e.printStackTrace();
+				error("Failed to register watch on " + closestExisting, e);
 			}
 			if (key == null) {
 				throw new NotWatchableException();
@@ -87,6 +92,7 @@ public class FileMonitor {
 					for (WatchEvent<?> candidate : res.pollEvents()) {
 						// Skip over unknown events.
 						if (candidate.kind() == StandardWatchEventKinds.OVERFLOW) {
+							debug("Java lost events, checking for additions to monitored file.");
 							// Java lost events. Make sure to process existing
 							// file to avoid missing additions.
 							if (Files.exists(path)) {
@@ -106,10 +112,12 @@ public class FileMonitor {
 								// Something happened to the monitored file.
 								if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE
 										|| event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
+									debug(path + " was created or modified.");
 									// Read the file's content and notify
 									// listener.
 									examineFile(path, fileEncoding, listener);
 								} else if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
+									debug(path + " was deleted.");
 									listener.noSuchFile(path);
 								}
 							}
@@ -118,6 +126,7 @@ public class FileMonitor {
 							if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
 								if (event.context().getName(0)
 										.equals(watchToDesiredWatch.getName(0))) {
+									debug("More specific path to monitor available.");
 									// Path towards monitored file created,
 									// dispose current watch and try to get a
 									// closer watch.
@@ -129,12 +138,12 @@ public class FileMonitor {
 						}
 					}
 				} catch (InterruptedException e) {
-					e.printStackTrace();
+					error("Interrupted waiting for watch event.", e);
 					break;
 				} finally {
 					if (res != null && res.reset() == false) {
-						// Aborting watch on closestExisting as closetExisting
-						// is no longer watchable.
+						debug("Aborting watch on " + closestExisting
+								+ " as it is no longer watchable.");
 						break;
 					}
 				}

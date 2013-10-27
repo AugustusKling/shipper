@@ -1,13 +1,21 @@
 package shipper;
 
+import static shipper.ShipperLogger.info;
+
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.net.SocketAppender;
 
 /**
@@ -20,6 +28,10 @@ public class Main {
 	 */
 	private enum arg {
 		/**
+		 * File path.
+		 */
+		FILE("Path to monitored file"),
+		/**
 		 * Recipient name.
 		 */
 		HOST("Target hostname"),
@@ -28,17 +40,17 @@ public class Main {
 		 */
 		PORT("Target port", "4560"),
 		/**
-		 * File path.
-		 */
-		FILE("Path to monitored file"),
-		/**
 		 * Whether to sent all lines or just added lines.
 		 */
 		SKIP("Skip over existing data", "true"),
 		/**
 		 * Input file encoding.
 		 */
-		FILE_ENCODING("Encoding of the input file", "UTF-8");
+		FILE_ENCODING("Encoding of the input file", "UTF-8"),
+		/**
+		 * Configuration files to control details of log output.
+		 */
+		LOGGING_CONFIGURATION("Path to log4j configuration.", "");
 
 		/**
 		 * Hint, displayed in usage message.
@@ -84,11 +96,37 @@ public class Main {
 	public static void main(String[] args) throws IOException {
 		arguments = Arrays.asList(args);
 
-		Logger root = Logger.getRootLogger();
+		// Configure logging system.
+		Properties logConfig = new Properties();
+		InputStream logConfigStream = null;
+		try {
+			if (get(arg.LOGGING_CONFIGURATION).isEmpty()) {
+				// Use defaults because user did not ask for specific
+				// configuration.
+				logConfigStream = Main.class
+						.getResourceAsStream("logging.properties");
+			} else if (Files.exists(Paths.get(get(arg.LOGGING_CONFIGURATION)))) {
+				// Use users configuration.
+				logConfigStream = new FileInputStream(
+						get(arg.LOGGING_CONFIGURATION));
+			} else {
+				System.err
+						.println("Specified logging configration file does not exist. Using default configuration.");
+				logConfigStream = Main.class
+						.getResourceAsStream("logging.properties");
+			}
+			logConfig.load(new InputStreamReader(logConfigStream, Charset
+					.forName("UTF-8")));
+		} finally {
+			if (logConfigStream != null) {
+				logConfigStream.close();
+			}
+		}
+
 		// Configure target or log messages according to command line.
-		SocketAppender socketAppender = new SocketAppender(get(arg.HOST),
-				Integer.valueOf(get(arg.PORT)));
-		root.addAppender(socketAppender);
+		logConfig.put("log4j.appender.shipperSocket.remoteHost", get(arg.HOST));
+		logConfig.put("log4j.appender.shipperSocket.port", get(arg.PORT));
+		PropertyConfigurator.configure(logConfig);
 
 		// Monitor a single file.
 		new FileMonitor(Paths.get(get(arg.FILE)),
@@ -153,7 +191,7 @@ public class Main {
 					private void println(MessageCategory newCategory,
 							String message) {
 						if (!lastCategory.equals(newCategory)) {
-							System.out.println(message);
+							info(message);
 							lastCategory = newCategory;
 						}
 					}
@@ -199,10 +237,12 @@ public class Main {
 		System.err.print("Usage: java -jar shipper.jar");
 		for (arg option : arg.values()) {
 			String defaultValue;
-			if (option.defaultValue != null) {
-				defaultValue = option.defaultValue;
-			} else {
+			if (option.defaultValue == null) {
 				defaultValue = "…";
+			} else if (option.defaultValue.isEmpty()) {
+				defaultValue = "\"\"";
+			} else {
+				defaultValue = option.defaultValue;
 			}
 			System.err.print(" " + option.getCommandLineName() + " "
 					+ defaultValue);

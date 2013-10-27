@@ -26,3 +26,5 @@ Parameters are as follows:
 `--skip` When `true` the existing file contents are never sent. Newly added lines are sent, though. When `false` all lines will be sent which includes lines that have already been sent with an ealier program start.
 
 `--file-encoding` Encoding of input file. Defaults to UTF-8 which should be fine for most Linux systems. Needs to be set explicitly for Windows systems because their default encoding depends on the region they were sold.
+
+`--logging-configuration` Path to detailed logging configuration. The empty default leads to using the bundled `logging.properties`.
