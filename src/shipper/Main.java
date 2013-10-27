@@ -1,15 +1,13 @@
 package shipper;
 
-import static shipper.ShipperLogger.info;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -80,15 +78,6 @@ public class Main {
 	}
 
 	/**
-	 * Categories of messages to user.
-	 */
-	private enum MessageCategory {
-		SENDING, NO_SUCH_FILE, FILE_ROTATED
-	}
-
-	static Logger logger = Logger.getLogger(Main.class);
-
-	/**
 	 * Command line arguments (unparsed).
 	 */
 	private static List<String> arguments;
@@ -128,74 +117,20 @@ public class Main {
 		logConfig.put("log4j.appender.shipperSocket.port", get(arg.PORT));
 		PropertyConfigurator.configure(logConfig);
 
-		// Monitor a single file.
-		new FileMonitor(Paths.get(get(arg.FILE)),
-				Charset.forName(get(arg.FILE_ENCODING)),
-				new FileModificationListener() {
-					/**
-					 * If {@code true} encountered messages are ignored.
-					 */
-					boolean skip = Boolean.valueOf(get(arg.SKIP));
+		// Monitor given files.
+		int fileIndex = 0;
+		for (final String file : getAll(arg.FILE)) {
+			Thread monitor = new FileListenerThread(
+					Paths.get(file),
+					// Append file index to logger hierarchy so files can be
+					// forwarded differently.
+					Logger.getLogger("shipper.Main." + fileIndex),
+					Charset.forName(get(arg.FILE_ENCODING)),
+					Boolean.valueOf(get(arg.SKIP)));
+			monitor.start();
 
-					/**
-					 * Category of last emitted message.
-					 */
-					private MessageCategory lastCategory = MessageCategory.SENDING;
-
-					@Override
-					public void noSuchFile(Path path) {
-						println(MessageCategory.NO_SUCH_FILE,
-								"File at "
-										+ path.toAbsolutePath()
-										+ " is not existent. Path will be monitored for newly added files.");
-						// Disable skipping as a newly created to be found file
-						// will only contain new data.
-						skip = false;
-					}
-
-					@Override
-					public void lineAdded(Path path, String lineContent) {
-						if (!skip) {
-							println(MessageCategory.SENDING,
-									"Sending lines of " + path.toAbsolutePath()
-											+ " (after non-normal state).");
-
-							// Send encountered message to target host.
-							logger.info(lineContent);
-						}
-					}
-
-					@Override
-					public void fileRotated(Path path) {
-						println(MessageCategory.FILE_ROTATED,
-								"File at "
-										+ path.toAbsolutePath()
-										+ " was rotated. Will send all lines of new file.");
-					}
-
-					@Override
-					public void completelyRead(Path file) {
-						// File end was reached, disable skipping to begin
-						// sending newly added messages.
-						skip = false;
-					}
-
-					/**
-					 * Shows message to user if category changes.
-					 * 
-					 * @param newCategory
-					 *            Message category.
-					 * @param message
-					 *            Text to display.
-					 */
-					private void println(MessageCategory newCategory,
-							String message) {
-						if (!lastCategory.equals(newCategory)) {
-							info(message);
-							lastCategory = newCategory;
-						}
-					}
-				});
+			fileIndex = fileIndex + 1;
+		}
 	}
 
 	/**
@@ -222,6 +157,33 @@ public class Main {
 			// Take value from command line.
 			return arguments.get(valueIndex);
 		}
+	}
+
+	/**
+	 * Parses command line and collects values.
+	 * 
+	 * @param argument
+	 *            Command line argument.
+	 * @return Values that have been given for the parameter.
+	 */
+	private static List<String> getAll(arg argument) {
+		List<String> values = new ArrayList<>(5);
+		for (int index = 0; index < arguments.size() - 1; index = index + 2) {
+			if (arguments.get(index).equals(argument.getCommandLineName())) {
+				values.add(arguments.get(index + 1));
+			}
+		}
+		if (values.isEmpty()) {
+			if (argument.defaultValue != null) {
+				values.add(argument.defaultValue);
+			} else {
+				// An argument without default value needs to be given at least
+				// once.
+				printUsageAndExit(argument);
+				return null;
+			}
+		}
+		return values;
 	}
 
 	/**

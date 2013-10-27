@@ -21,7 +21,7 @@ Parameters are as follows:
 
 `--port` Port where central log server makes a log4j input available.
 
-`--file` Path to local file that shall be monitored. In case the file does not exist, the given location will be monitored and processing will start as soon as the file is created. In case the file gets deleted while processing, processing continues after another file is created at the given path.
+`--file` Path to local file that shall be monitored. In case the file does not exist, the given location will be monitored and processing will start as soon as the file is created. In case the file gets deleted while processing, processing continues after another file is created at the given path. This parameter can be given multiple times to list several files for monitoring.
 
 `--skip` When `true` the existing file contents are never sent. Newly added lines are sent, though. When `false` all lines will be sent which includes lines that have already been sent with an ealier program start.
 
