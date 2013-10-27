@@ -12,16 +12,16 @@ Usage
 
 Invocations look as follows where you are expected to replace all `…` with proper values. Parameters with default values can be omitted.
 ```
-java -jar shipper.jar --host … --port 4560 --file … --skip true --file-encoding UTF-8
+java -jar shipper.jar --file … --host … --port 4560 --skip true --file-encoding UTF-8 --logging-configuration ""
 ```
 
 Parameters are as follows:
 
+`--file` Path to local file that shall be monitored. In case the file does not exist, the given location will be monitored and processing will start as soon as the file is created. In case the file gets deleted while processing, processing continues after another file is created at the given path. This parameter can be given multiple times to list several files for monitoring.
+
 `--host` Name of central log server.
 
 `--port` Port where central log server makes a log4j input available.
-
-`--file` Path to local file that shall be monitored. In case the file does not exist, the given location will be monitored and processing will start as soon as the file is created. In case the file gets deleted while processing, processing continues after another file is created at the given path. This parameter can be given multiple times to list several files for monitoring.
 
 `--skip` When `true` the existing file contents are never sent. Newly added lines are sent, though. When `false` all lines will be sent which includes lines that have already been sent with an ealier program start.
 
