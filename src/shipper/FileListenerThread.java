@@ -67,65 +67,70 @@ public class FileListenerThread extends Thread {
 	@Override
 	public void run() {
 		try {
-			new FileMonitor(file, encoding, new FileModificationListener() {
-				/**
-				 * Category of last emitted message.
-				 */
-				private MessageCategory lastCategory = MessageCategory.SENDING;
+			new FileMonitor().watch(file, encoding,
+					new FileModificationListener() {
+						/**
+						 * Category of last emitted message.
+						 */
+						private MessageCategory lastCategory = MessageCategory.SENDING;
 
-				@Override
-				public void noSuchFile(Path path) {
-					println(MessageCategory.NO_SUCH_FILE,
-							"File at "
-									+ path.toAbsolutePath()
-									+ " is not existent. Path will be monitored for newly added files.");
-					// Disable skipping as a newly created to be found file will
-					// only contain new data.
-					skip = false;
-				}
+						@Override
+						public void noSuchFile(Path path) {
+							println(MessageCategory.NO_SUCH_FILE,
+									"File at "
+											+ path.toAbsolutePath()
+											+ " is not existent. Path will be monitored for newly added files.");
+							// Disable skipping as a newly created to be found
+							// file will
+							// only contain new data.
+							skip = false;
+						}
 
-				@Override
-				public void lineAdded(Path path, String lineContent) {
-					if (!skip) {
-						println(MessageCategory.SENDING, "Sending lines of "
-								+ path.toAbsolutePath()
-								+ " (after non-normal state).");
+						@Override
+						public void lineAdded(Path path, String lineContent) {
+							if (!skip) {
+								println(MessageCategory.SENDING,
+										"Sending lines of "
+												+ path.toAbsolutePath()
+												+ " (after non-normal state).");
 
-						// Send encountered message to target host.
-						logger.info(lineContent);
-					}
-				}
+								// Send encountered message to target host.
+								logger.info(lineContent);
+							}
+						}
 
-				@Override
-				public void fileRotated(Path path) {
-					println(MessageCategory.FILE_ROTATED,
-							"File at "
-									+ path.toAbsolutePath()
-									+ " was rotated. Will send all lines of new file.");
-				}
+						@Override
+						public void fileRotated(Path path) {
+							println(MessageCategory.FILE_ROTATED,
+									"File at "
+											+ path.toAbsolutePath()
+											+ " was rotated. Will send all lines of new file.");
+						}
 
-				@Override
-				public void completelyRead(Path file) {
-					// File end was reached, disable skipping to begin sending
-					// newly added messages.
-					skip = false;
-				}
+						@Override
+						public void completelyRead(Path file) {
+							// File end was reached, disable skipping to begin
+							// sending
+							// newly added messages.
+							skip = false;
+						}
 
-				/**
-				 * Shows message to user if category changes.
-				 * 
-				 * @param newCategory
-				 *            Message category.
-				 * @param message
-				 *            Text to display.
-				 */
-				private void println(MessageCategory newCategory, String message) {
-					if (!lastCategory.equals(newCategory)) {
-						info(message);
-						lastCategory = newCategory;
-					}
-				}
-			});
+						/**
+						 * Shows message to user if category changes.
+						 * 
+						 * @param newCategory
+						 *            Message category.
+						 * @param message
+						 *            Text to display.
+						 */
+						private void println(MessageCategory newCategory,
+								String message) {
+							if (!lastCategory.equals(newCategory)) {
+								info(message);
+								lastCategory = newCategory;
+							}
+						}
+					});
 		} catch (IOException e) {
 			error("Failed to monitor " + file
 					+ ". Please file an issue including the dumped stack.", e);

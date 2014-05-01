@@ -26,7 +26,7 @@ public class FileMonitorTest {
 
 		final Path tempFile = Files.createTempFile(null, null);
 		try {
-			new FileMonitor(tempFile, Charset.defaultCharset(),
+			new FileMonitor().watch(tempFile, Charset.defaultCharset(),
 					new FileModificationListener() {
 						private int step = 0;
 

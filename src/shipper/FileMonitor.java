@@ -27,6 +27,7 @@ public class FileMonitor {
 	 * Position of read content. Used to detect file rotations.
 	 */
 	long fileEndPosition = 0;
+	private boolean watching = false;
 
 	/**
 	 * @param path
@@ -38,8 +39,12 @@ public class FileMonitor {
 	 * @throws IOException
 	 *             Errors other than {@link NoSuchFileException}.
 	 */
-	public FileMonitor(Path path, Charset fileEncoding,
+	public void watch(Path path, Charset fileEncoding,
 			FileModificationListener listener) throws IOException {
+		// Read file from beginning.
+		fileEndPosition = 0;
+		watching = true;
+
 		WatchService ws;
 
 		if (!Files.exists(path)) {
@@ -62,7 +67,7 @@ public class FileMonitor {
 				StandardWatchEventKinds.ENTRY_DELETE,
 				StandardWatchEventKinds.ENTRY_MODIFY };
 
-		while (true) {
+		while (watching) {
 			// Acquire a watch as close to the monitored file as possible.
 			Path closestExisting = getClosestWatchable(path);
 			Path watchToDesiredWatch = closestExisting.relativize(path
@@ -83,7 +88,7 @@ public class FileMonitor {
 				// parent folder moves).
 				examineFile(path, fileEncoding, listener);
 			}
-			awaitKeys: while (true) {
+			awaitKeys: while (watching) {
 				WatchKey res = null;
 				try {
 					// Await the presence of new events on the watched folder.
@@ -238,18 +243,33 @@ public class FileMonitor {
 	 * @return Most specific, but existing parent.
 	 */
 	private Path getClosestWatchable(Path path) {
+		debug("Trying to find watchable parent for " + path);
 		Path parent = path.getParent();
 		if (parent == null) {
 			// No existent parent found in hierarchy. Expected for file systems
 			// with multiple roots where the given path does not fall below any
 			// of the roots.
+			debug("No watchable parent found for " + path);
 			throw new NotWatchableException();
 		} else if (Files.exists(parent)) {
+			debug("Found watchable parent " + parent + " for path " + path);
 			return parent;
 		} else {
+			debug("Climbing up as parent " + parent + " not existent for path "
+					+ path);
+			try {
+				debug("Absolute from existence of parent " + parent + ": "
+						+ Files.exists(parent.toAbsolutePath()));
+			} catch (Exception e) {
+				error("Absolute form check failed for parent " + parent, e);
+			}
 			// Parent does not exist but path is not yet fully consumed. Climb
 			// up towards root.
 			return getClosestWatchable(parent);
 		}
+	}
+
+	public void abortWatching() {
+		watching = false;
 	}
 }
